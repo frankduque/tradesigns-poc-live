@@ -244,9 +244,25 @@ def main():
     horizons = [5, 15, 30, 60, 240, 1440]  # 5m, 15m, 30m, 1h, 4h, 1 dia
     df, target_names = create_multihorizon_labels(df, horizons)
     
-    # 4. Limpar NaNs
-    df = df.dropna()
-    logger.info(f"\n✓ Dataset final: {len(df):,} samples")
+    # 4. Desfragmentar DataFrame (corrige warnings de performance)
+    logger.info("\n🔧 Desfragmentando DataFrame...")
+    df = df.copy()
+    
+    # 5. Limpar NaNs de forma inteligente
+    logger.info("🧹 Removendo NaNs...")
+    initial_rows = len(df)
+    
+    # Remove apenas linhas onde TODOS os targets são NaN
+    # (preserva mais dados do que dropna() completo)
+    df = df.dropna(subset=target_names, how='all')
+    
+    # Remove linhas onde features críticas são NaN
+    critical_features = ['close', 'high', 'low', 'volume']
+    df = df.dropna(subset=critical_features)
+    
+    final_rows = len(df)
+    logger.info(f"✓ Removidos {initial_rows - final_rows:,} linhas com NaN")
+    logger.info(f"✓ Dataset final: {final_rows:,} samples ({final_rows/initial_rows*100:.1f}% preservado)")
     
     # 5. Separar features e targets
     feature_cols = [col for col in df.columns if not col.startswith(('return_', 'upside_', 'downside_'))]
