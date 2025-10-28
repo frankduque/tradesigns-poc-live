@@ -47,17 +47,17 @@ def create_advanced_features(df):
     9. Statistical (20 features)
     """
     
-    logger.info("Criando features avançadas...")
-    logger.info("📊 Progresso: 0% - Iniciando feature engineering")
+    log_with_time(logger, "Criando features avançadas...")
+    log_with_time(logger, "📊 Progresso: 0% - Iniciando feature engineering")
     
     # Feature engineering sempre em pandas (GPU não compatível com GTX 1060)
     
     # 1. TREND FEATURES (20)
-    logger.info("📈 [10%] Calculando TREND features (SMAs, EMAs)...")
+    log_with_time(logger, "📈 [10%] Calculando TREND features (SMAs, EMAs)...")
     for window in [5, 10, 20, 30, 50, 100, 200]:
         df[f'sma_{window}'] = df['close'].rolling(window).mean()
         df[f'ema_{window}'] = df['close'].ewm(span=window).mean()
-        logger.info(f"   ✓ SMA/EMA {window} completo")
+        log_with_time(logger, f"   ✓ SMA/EMA {window} completo")
     
     # Distâncias de SMAs
     logger.info("   ✓ Calculando distâncias e crossovers...")
@@ -180,16 +180,23 @@ def create_advanced_features(df):
     logger.info("✅ [90%] TIME/SEASONAL features completos!")
     
     # 7. STATISTICAL FEATURES (20)
-    logger.info("📈 [92%] Calculando STATISTICAL features...")
+    log_with_time(logger, "📈 [92%] Calculando STATISTICAL features...")
+    start_stat = datetime.now()
     for window in [10, 20, 50]:
+        log_with_time(logger, f"   ⏳ Calculando skew/kurt window={window}...")
         df[f'skew_{window}'] = df['close'].rolling(window).skew()
         df[f'kurt_{window}'] = df['close'].rolling(window).kurt()
+        log_with_time(logger, f"   ✓ skew/kurt {window} completo")
     
-    # Autocorrelação
+    # Autocorrelação - AQUI É O PROBLEMA!
+    log_with_time(logger, "   ⏳ Calculando autocorrelação (PODE DEMORAR 5-10 MIN!)...")
     for lag in [1, 5, 10, 20]:
-        df[f'autocorr_lag{lag}'] = df['close'].rolling(50).apply(lambda x: x.autocorr(lag=lag))
+        log_with_time(logger, f"   ⏳ Autocorr lag={lag} iniciando...")
+        df[f'autocorr_lag{lag}'] = df['close'].rolling(50).apply(lambda x: x.autocorr(lag=lag) if len(x) == 50 else np.nan)
+        log_with_time(logger, f"   ✓ Autocorr lag={lag} completo")
     
-    logger.info(f"✅ [100%] {len(df.columns)} features criadas - COMPLETO!")
+    elapsed_stat = (datetime.now() - start_stat).total_seconds()
+    log_with_time(logger, f"✅ [100%] {len(df.columns)} features criadas - COMPLETO! (Statistical: {elapsed_stat:.0f}s)")
     return df
 
 
