@@ -48,15 +48,19 @@ def create_advanced_features(df):
     """
     
     logger.info("Criando features avançadas...")
+    logger.info("📊 Progresso: 0% - Iniciando feature engineering")
     
     # Feature engineering sempre em pandas (GPU não compatível com GTX 1060)
     
     # 1. TREND FEATURES (20)
+    logger.info("📈 [10%] Calculando TREND features (SMAs, EMAs)...")
     for window in [5, 10, 20, 30, 50, 100, 200]:
         df[f'sma_{window}'] = df['close'].rolling(window).mean()
         df[f'ema_{window}'] = df['close'].ewm(span=window).mean()
+        logger.info(f"   ✓ SMA/EMA {window} completo")
     
     # Distâncias de SMAs
+    logger.info("   ✓ Calculando distâncias e crossovers...")
     df['price_sma20_dist'] = (df['close'] - df['sma_20']) / df['sma_20']
     df['price_sma50_dist'] = (df['close'] - df['sma_50']) / df['sma_50']
     df['sma20_sma50_dist'] = (df['sma_20'] - df['sma_50']) / df['sma_50']
@@ -64,8 +68,10 @@ def create_advanced_features(df):
     # Crossovers
     df['sma10_cross_sma30'] = ((df['sma_10'] > df['sma_30']).astype(int).diff())
     df['sma20_cross_sma50'] = ((df['sma_20'] > df['sma_50']).astype(int).diff())
+    logger.info("✅ [20%] TREND features completos!")
     
     # 2. MOMENTUM FEATURES (25)
+    logger.info("🔥 [30%] Calculando MOMENTUM features (RSI, MACD, Stochastic)...")
     # RSI em múltiplos períodos
     for window in [7, 14, 21, 28]:
         delta = df['close'].diff()
@@ -73,8 +79,10 @@ def create_advanced_features(df):
         loss = (-delta.where(delta < 0, 0)).rolling(window).mean()
         rs = gain / loss
         df[f'rsi_{window}'] = 100 - (100 / (1 + rs))
+        logger.info(f"   ✓ RSI {window} completo")
     
     # MACD em múltiplas configurações
+    logger.info("   ✓ Calculando MACD multi-config...")
     for fast, slow, signal in [(12, 26, 9), (5, 35, 5), (19, 39, 9)]:
         ema_fast = df['close'].ewm(span=fast).mean()
         ema_slow = df['close'].ewm(span=slow).mean()
@@ -85,6 +93,7 @@ def create_advanced_features(df):
         df[f'macd_hist_{fast}_{slow}'] = macd - macd_signal
     
     # Stochastic
+    logger.info("   ✓ Calculando Stochastic...")
     for window in [14, 21]:
         low_min = df['low'].rolling(window).min()
         high_max = df['high'].rolling(window).max()
@@ -92,10 +101,13 @@ def create_advanced_features(df):
         df[f'stoch_d_{window}'] = df[f'stoch_k_{window}'].rolling(3).mean()
     
     # ROC (Rate of Change)
+    logger.info("   ✓ Calculando ROC...")
     for window in [5, 10, 20]:
         df[f'roc_{window}'] = df['close'].pct_change(window) * 100
+    logger.info("✅ [45%] MOMENTUM features completos!")
     
     # 3. VOLATILITY FEATURES (20)
+    logger.info("📉 [55%] Calculando VOLATILITY features (ATR, Bollinger)...")
     for window in [14, 21, 30]:
         # ATR
         high_low = df['high'] - df['low']
@@ -108,6 +120,7 @@ def create_advanced_features(df):
         df[f'volatility_{window}'] = df['close'].pct_change().rolling(window).std()
     
     # Bollinger Bands (múltiplas configurações)
+    logger.info("   ✓ Calculando Bollinger Bands...")
     for window, num_std in [(20, 2), (20, 3), (50, 2)]:
         sma = df['close'].rolling(window).mean()
         std = df['close'].rolling(window).std()
@@ -115,8 +128,10 @@ def create_advanced_features(df):
         df[f'bb_lower_{window}_{num_std}'] = sma - (num_std * std)
         df[f'bb_width_{window}_{num_std}'] = (df[f'bb_upper_{window}_{num_std}'] - df[f'bb_lower_{window}_{num_std}']) / sma
         df[f'bb_percent_{window}_{num_std}'] = (df['close'] - df[f'bb_lower_{window}_{num_std}']) / (df[f'bb_upper_{window}_{num_std}'] - df[f'bb_lower_{window}_{num_std}'])
+    logger.info("✅ [65%] VOLATILITY features completos!")
     
     # 4. VOLUME FEATURES (15)
+    logger.info("📊 [70%] Calculando VOLUME features...")
     df['volume_ma_20'] = df['volume'].rolling(20).mean()
     df['volume_ratio'] = df['volume'] / df['volume_ma_20']
     
@@ -126,8 +141,10 @@ def create_advanced_features(df):
     
     # OBV
     df['obv'] = (np.sign(df['close'].diff()) * df['volume']).fillna(0).cumsum()
+    logger.info("✅ [75%] VOLUME features completos!")
     
     # 5. PRICE ACTION FEATURES (20)
+    logger.info("🕯️  [80%] Calculando PRICE ACTION features...")
     df['candle_size'] = df['high'] - df['low']
     df['candle_body'] = np.abs(df['close'] - df['open'])
     df['candle_body_pct'] = df['candle_body'] / df['candle_size']
@@ -143,8 +160,10 @@ def create_advanced_features(df):
     for window in [10, 20, 50]:
         df[f'distance_from_high_{window}'] = (df['high'].rolling(window).max() - df['close']) / df['close']
         df[f'distance_from_low_{window}'] = (df['close'] - df['low'].rolling(window).min()) / df['close']
+    logger.info("✅ [85%] PRICE ACTION features completos!")
     
     # 6. TIME/SEASONAL FEATURES (15)
+    logger.info("🕐 [88%] Calculando TIME/SEASONAL features...")
     df['hour'] = df.index.hour
     df['day_of_week'] = df.index.dayofweek
     df['day_of_month'] = df.index.day
@@ -156,8 +175,10 @@ def create_advanced_features(df):
     df['is_london_session'] = ((df['hour'] >= 8) & (df['hour'] < 17)).astype(int)
     df['is_ny_session'] = ((df['hour'] >= 13) & (df['hour'] < 22)).astype(int)
     df['is_overlap'] = ((df['hour'] >= 13) & (df['hour'] < 17)).astype(int)
+    logger.info("✅ [90%] TIME/SEASONAL features completos!")
     
     # 7. STATISTICAL FEATURES (20)
+    logger.info("📈 [92%] Calculando STATISTICAL features...")
     for window in [10, 20, 50]:
         df[f'skew_{window}'] = df['close'].rolling(window).skew()
         df[f'kurt_{window}'] = df['close'].rolling(window).kurt()
@@ -166,7 +187,7 @@ def create_advanced_features(df):
     for lag in [1, 5, 10, 20]:
         df[f'autocorr_lag{lag}'] = df['close'].rolling(50).apply(lambda x: x.autocorr(lag=lag))
     
-    logger.info(f"✅ {len(df.columns)} features criadas")
+    logger.info(f"✅ [100%] {len(df.columns)} features criadas - COMPLETO!")
     return df
 
 
