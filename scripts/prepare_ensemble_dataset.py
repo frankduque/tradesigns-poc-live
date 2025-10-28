@@ -20,15 +20,12 @@ import joblib
 from concurrent.futures import ProcessPoolExecutor
 import logging
 
-# Tentar usar GPU (RAPIDS)
-try:
-    import cudf
-    import cupy as cp
-    GPU_AVAILABLE = True
-    print("✅ GPU disponível para processamento!")
-except ImportError:
-    GPU_AVAILABLE = False
-    print("⚠️  GPU não disponível, usando CPU")
+# RAPIDS cuDF não funciona em GPUs antigas (Compute Capability < 7.0)
+# GTX 1060 = 6.1, então sempre usa pandas (CPU)
+# GPU será usada no treinamento (LightGBM/XGBoost)
+GPU_AVAILABLE = False
+print("ℹ️  Feature engineering em CPU (pandas)")
+print("💡 GPU será usada no treinamento dos modelos!")
 
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
