@@ -49,12 +49,7 @@ def create_advanced_features(df):
     
     logger.info("Criando features avançadas...")
     
-    # Se tiver GPU, converter para cuDF
-    if GPU_AVAILABLE:
-        df_gpu = cudf.from_pandas(df)
-        # Processar no GPU
-        # ... código GPU
-        df = df_gpu.to_pandas()
+    # Feature engineering sempre em pandas (GPU não compatível com GTX 1060)
     
     # 1. TREND FEATURES (20)
     for window in [5, 10, 20, 30, 50, 100, 200]:
