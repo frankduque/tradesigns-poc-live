@@ -137,7 +137,9 @@ def create_advanced_features(df):
     
     for window in [10, 20, 30]:
         df[f'volume_std_{window}'] = df['volume'].rolling(window).std()
-        df[f'volume_trend_{window}'] = df['volume'].rolling(window).apply(lambda x: np.polyfit(range(len(x)), x, 1)[0])
+        # volume_trend removido temporariamente (muito lento com polyfit)
+        # Usando aproximação mais rápida: diferença entre médias
+        df[f'volume_trend_{window}'] = df['volume'].rolling(window).mean().diff()
     
     # OBV
     df['obv'] = (np.sign(df['close'].diff()) * df['volume']).fillna(0).cumsum()
