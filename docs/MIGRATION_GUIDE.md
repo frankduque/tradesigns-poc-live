@@ -27,7 +27,7 @@ git add .
 git commit -m "POC Multi-Target Regression - Ready for GPU training"
 
 # Conectar ao GitHub
-git remote add origin https://github.com/SEU_USUARIO/tradesigns-poc-live.git
+git remote add origin https://github.com/frankduque/tradesigns-poc-live.git
 git branch -M main
 git push -u origin main
 ```
@@ -39,7 +39,7 @@ git push -u origin main
 ```bash
 # No PC com GTX 1060 3GB
 cd "C:\projetos"  # Ou onde preferir
-git clone https://github.com/SEU_USUARIO/tradesigns-poc-live.git
+git clone https://github.com/frankduque/tradesigns-poc-live.git
 cd tradesigns-poc-live
 ```
 
